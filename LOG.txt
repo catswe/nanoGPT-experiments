@@ -1,3 +1,12 @@
+9.
+inherit: 8
+iter 1999: loss 1.7285, time 24.59ms, mfu 0.05%
+step 2000: train loss 1.5061, val loss 1.6950
+saving checkpoint to out-shakespeare-char
+iter 2000: loss 1.4948, time 442.20ms, mfu 0.05%
+-learning_rate = 1e-3 * 4 # with baby networks can afford to go a bit higher
++learning_rate = 1e-3 * 5 # with baby networks can afford to go a bit higher
+
 8.
 inherit: 6
 step 2000: train loss 1.5123, val loss 1.7027
