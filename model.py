@@ -24,7 +24,7 @@ class LayerNorm(nn.Module):
         self.bias = nn.Parameter(torch.zeros(ndim)) if bias else None
 
     def forward(self, input):
-        return F.layer_norm(input, self.weight.shape, self.weight, self.bias, 1e-5)
+        return F.rms_norm(input, self.weight.shape, self.weight, 1e-5)
 
 class CausalSelfAttention(nn.Module):
 
@@ -84,7 +84,6 @@ class MLP(nn.Module):
         self.gelu    = nn.GELU()
         self.ln2 = LayerNorm(4 * config.n_embd, bias=config.bias)
         self.c_proj  = nn.Linear(4 * config.n_embd, config.n_embd, bias=config.bias)
-        self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x):
         two_split = self.ln1(torch.cat([self.gelu(x), self.gelu(-x)], dim=-1))
@@ -93,7 +92,6 @@ class MLP(nn.Module):
         x = self.c_fc(x)
         x = self.gelu(x) + four_split
         x = self.c_proj(self.ln2(x))
-        x = self.dropout(x)
         return x
 
 class Block(nn.Module):
