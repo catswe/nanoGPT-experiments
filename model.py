@@ -79,14 +79,18 @@ class MLP(nn.Module):
 
     def __init__(self, config):
         super().__init__()
+        self.ln = LayerNorm(config.n_embd * 2, bias=config.bias)
         self.c_fc    = nn.Linear(config.n_embd, 4 * config.n_embd, bias=config.bias)
         self.gelu    = nn.GELU()
         self.c_proj  = nn.Linear(4 * config.n_embd, config.n_embd, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x):
+        two_split = self.ln(torch.cat([self.gelu(x), self.gelu(-x)], dim=-1))
+        four_split = torch.cat([self.gelu(two_split), self.gelu(-two_split)], dim=-1)
+
         x = self.c_fc(x)
-        x = self.gelu(x)
+        x = self.gelu(x) + four_split
         x = self.c_proj(x)
         x = self.dropout(x)
         return x
@@ -143,6 +147,15 @@ class GPT(nn.Module):
         for pn, p in self.named_parameters():
             if pn.endswith('c_proj.weight'):
                 torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer))
+
+        for block in self.transformer.h:
+            torch.nn.init.zeros_(block.mlp.c_fc.weight)
+            torch.nn.init.zeros_(block.mlp.c_proj.weight)
+
+            if block.mlp.c_fc.bias is not None:
+                torch.nn.init.zeros_(block.mlp.c_fc.bias)
+            if block.mlp.c_proj.bias is not None:
+                torch.nn.init.zeros_(block.mlp.c_proj.bias)
 
         # report number of parameters
         print("number of parameters: %.2fM" % (self.get_num_params()/1e6,))
